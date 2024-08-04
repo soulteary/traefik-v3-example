@@ -1,0 +1,124 @@
+# https://soulteary.com/tags/traefik.html
+version: "3"
+
+services:
+  traefik:
+    container_name: ${SERVICE_NAME}
+    image: ${DOCKER_IMAGE}
+    restart: always
+    ports:
+      - target: ${SERVICE_HTTP_PORT}
+        published: ${SERVICE_HTTP_PORT}
+        protocol: tcp
+        mode: host
+      - target: ${SERVICE_HTTPS_PORT}
+        published: ${SERVICE_HTTPS_PORT}
+        protocol: tcp
+        mode: host
+      - target: ${SERVICE_HTTPS_PORT}
+        published: ${SERVICE_HTTPS_PORT}
+        protocol: udp
+        mode: host
+    command:
+      # 生产使用，关闭匿名数据收集和版本检查
+      - "--global.sendanonymoususage=false"
+      - "--global.checknewversion=false"
+      # 开放常用 WEB 端口
+      - "--entrypoints.http.address=:${SERVICE_HTTP_PORT}"
+      - "--entrypoints.https.address=:${SERVICE_HTTPS_PORT}"
+      # 设置 HTTPS 为默认入口，允许应用不声明端口
+      - "--entryPoints.https.asDefault=true"
+      # 启用 HTTP/3 支持
+      - "--entryPoints.https.http3"
+      - "--entryPoints.https.http3.advertisedport=${SERVICE_HTTPS_PORT}"
+      - "--serverstransport.insecureskipverify=true"
+      # 如果是内网测试，可以信任所有转发信息
+      # - "--entryPoints.https.forwardedHeaders.insecure"
+      - "--entryPoints.http.forwardedHeaders.trustedIPs=127.0.0.1/32,172.18.0.1/24"
+      - "--entryPoints.https.forwardedHeaders.trustedIPs=127.0.0.1/32,172.18.0.1/24"
+      # 启用 API 接口
+      - "--api=true"
+      # 启用 Dashboard 界面
+      - "--api.dashboard=true"
+      # 启用 Ping 接口，用于健康检查
+      - "--ping=true"
+      # 日志相关设置
+      - "--log.level=INFO"
+      # 限制日志最大 100MB
+      - "--log.maxsize=100"
+      # 默认使用 common 文本格式
+      - "--log.format=common"
+      - "--accesslog=false"
+      - "--providers.docker=true"
+      - "--providers.docker.watch=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
+      - "--providers.docker.useBindPortIP=false"
+      - "--providers.docker.network=traefik"
+      - "--providers.file=true"
+      - "--providers.file.watch=true"
+      - "--providers.file.directory=/etc/traefik/config"
+      - "--providers.file.debugloggeneratedtemplate=true"
+    environment:
+      - TZ=Asia/Shanghai
+      - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
+    networks:
+      - traefik
+    labels:
+      # 用于 Traefik 服务发现
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+
+      # 通用 GZIP 中间件
+      - "traefik.http.middlewares.gzip.compress=true"
+      # 通用 HTTPS 重定向中间件
+      - "traefik.http.middlewares.redir-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redir-https.redirectscheme.permanent=false"
+
+      # 仅在 HTTPS 端口开放服务
+      - "traefik.http.routers.traefik-dashboard-secure.tls=true"
+      - "traefik.http.routers.traefik-dashboard-secure.entrypoints=https"
+      - "traefik.http.routers.traefik-dashboard-secure.middlewares=gzip"
+      - "traefik.http.routers.traefik-dashboard-secure.rule=Host(`${SERVICE_DOMAIN}`)"
+      - "traefik.http.routers.traefik-dashboard-secure.service=dashboard@internal"
+
+      # 将本服务的 HTTP 端口重定向到 HTTPS
+      - "traefik.http.routers.traefik-dashboard-nosecure.entrypoints=http"
+      - "traefik.http.routers.traefik-dashboard-nosecure.middlewares=redir-https"
+      - "traefik.http.routers.traefik-dashboard-nosecure.rule=Host(`${SERVICE_DOMAIN}`)"
+      - "traefik.http.routers.traefik-dashboard-nosecure.service=noop@internal"
+
+      # 确保 Traefik API 接口正常使用
+      - "traefik.http.routers.traefik-dashboard-api.tls=true"
+      - "traefik.http.routers.traefik-dashboard-api.entrypoints=https"
+      - "traefik.http.routers.traefik-dashboard-api.middlewares=gzip"
+      - "traefik.http.routers.traefik-dashboard-api.rule=Host(`${SERVICE_DOMAIN}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
+      - "traefik.http.routers.traefik-dashboard-api.service=api@internal"
+    volumes:
+      # 仅限标准的 Linux 环境
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      # 用于 Traefik 服务发现
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # 用户配置文件，主要用于 TLS 动态配置
+      - ./config/:/etc/traefik/config/:ro
+      - ./ssl/:/data/ssl/
+    extra_hosts:
+      # https://github.com/traefik/traefik/blob/master/pkg/version/version.go#L67
+      - "update.traefik.io:127.0.0.1"
+      # https://github.com/containous/traefik/blob/master/pkg/collector/collector.go#L20
+      - "collect.traefik.io:127.0.0.1"
+      - "stats.g.doubleclick.net:127.0.0.1"
+      - "${SERVICE_DOMAIN}:127.0.0.1"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider --proxy off localhost:8080/ping || exit 1"]
+      interval: 3s
+      retries: 10
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+
+networks:
+  traefik:
+    external: true
