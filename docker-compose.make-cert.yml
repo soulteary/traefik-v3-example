@@ -5,6 +5,6 @@ services:
   certs-maker:
     image: soulteary/certs-maker:v3.5.0
     environment:
-      - CERT_DNS=your-domain.ltd,*.your-domain.com
+      - CERT_DNS=example.com,*.example.com
     volumes:
       - ./ssl:/ssl
