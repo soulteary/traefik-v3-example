@@ -61,7 +61,6 @@ services:
       - "--providers.file.debugloggeneratedtemplate=true"
     environment:
       - TZ=Asia/Shanghai
-      - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
     networks:
       - traefik
     labels:
