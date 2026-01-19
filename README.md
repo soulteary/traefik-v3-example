@@ -23,7 +23,6 @@ traefik-v3-example/
 │   ├── certs.toml            # 证书配置（本地证书路径）
 │   └── tls.toml              # TLS 选项配置（加密套件等）
 ├── scripts/                   # 工具脚本目录
-│   ├── generate-certs.sh     # 生成自签名证书脚本
 │   └── prepare-network.sh    # 创建 Docker 网络脚本
 ├── ssl/                       # 证书存储目录
 │   ├── acme.json             # ACME 证书存储文件（ACME 模式）
@@ -89,14 +88,13 @@ docker network create traefik
 1. 生成自签名证书：
 
 ```bash
-./scripts/generate-certs.sh
+docker compose -f docker-compose.make-cert.yml up
+docker compose -f docker-compose.make-cert.yml down --remove-orphans
 ```
 
-或者使用 Docker 容器生成：
+> 提示：如需自定义域名，可以修改 `docker-compose.make-cert.yml` 中的 `CERT_DNS` 环境变量，例如：`CERT_DNS=yourdomain.com,*.yourdomain.com`
 
-```bash
-docker-compose -f docker-compose.make-cert.yml up
-```
+生成的证书会保存在 `ssl/` 目录下。
 
 2. 启动 Traefik：
 
@@ -171,15 +169,27 @@ cipherSuites = [
 ]
 ```
 
+#### `docker-compose.make-cert.yml`
+
+使用 certs-maker 容器生成自签名证书。可以通过修改 `CERT_DNS` 环境变量来自定义域名：
+
+```yaml
+services:
+  certs-maker:
+    image: soulteary/certs-maker:v3.8.0
+    environment:
+      - CERT_DNS=example.com,*.example.com  # 自定义域名，支持通配符
+    volumes:
+      - ./ssl:/ssl
+```
+
+生成的证书文件会保存在 `ssl/` 目录下，格式为 PEM 格式（`.pem.crt` 和 `.pem.key`）。
+
 ### 脚本说明
 
 #### `scripts/prepare-network.sh`
 
 创建 Traefik 专用的 Docker 网络。如果网络已存在，脚本会跳过创建。
-
-#### `scripts/generate-certs.sh`
-
-生成自签名证书，支持通配符域名（如 `*.example.com`）。生成的证书会保存在 `ssl/` 目录下。
 
 ## 使用示例
 
@@ -229,8 +239,11 @@ services:
 1. 生成证书：
 
 ```bash
-./scripts/generate-certs.sh
+docker compose -f docker-compose.make-cert.yml up
+docker compose -f docker-compose.make-cert.yml down --remove-orphans
 ```
+
+> 提示：如需自定义域名，可以修改 `docker-compose.make-cert.yml` 中的 `CERT_DNS` 环境变量。
 
 2. 确保 `config/certs.toml` 中的证书路径正确
 3. 启动服务：
