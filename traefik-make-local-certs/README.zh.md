@@ -75,7 +75,7 @@ services:
     environment:
       - CERT_DNS=${CERT_DNS}
     volumes:
-      - ../../ssl:/ssl
+      - ./ssl:/ssl
 ```
 
 ### 证书存储位置
