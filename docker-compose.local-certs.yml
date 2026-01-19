@@ -1,5 +1,4 @@
 # https://soulteary.com/tags/traefik.html
-version: "3"
 
 services:
   traefik:

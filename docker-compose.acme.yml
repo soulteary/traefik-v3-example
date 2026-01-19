@@ -1,5 +1,4 @@
 # https://soulteary.com/tags/traefik.html
-version: "3"
 
 services:
   traefik:
@@ -64,7 +63,7 @@ services:
       - "--certificatesresolvers.le.acme.storage=/data/ssl/acme.json"
       - "--certificatesresolvers.le.acme.dnsChallenge.resolvers=1.1.1.1:53,8.8.8.8:53"
       - "--certificatesresolvers.le.acme.dnsChallenge.provider=${ACME_PROVIDER}"
-      - "--certificatesresolvers.le.acme.dnsChallenge.delayBeforeCheck=30"
+      - "--certificatesresolvers.le.acme.dnsChallenge.propagation.delayBeforeChecks=30"
     environment:
       - TZ=Asia/Shanghai
       - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
