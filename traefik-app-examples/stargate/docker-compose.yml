@@ -1,0 +1,112 @@
+# Stargate Forward Auth Service 示例配置
+# https://github.com/soulteary/stargate
+#
+# 使用说明：
+# 1. 修改环境变量中的 AUTH_HOST 和 PASSWORDS
+# 2. 确保域名 DNS 解析正确
+# 3. 启动服务：docker-compose -f docker-compose.stargate.yml up -d
+#
+# 访问示例：
+# - Stargate 登录页面: https://auth.example.com/_login?callback=https://protected.example.com
+# - 受保护的服务: https://protected.example.com (需要先登录)
+
+name: ${STARGATE_SERVICE_NAME}
+
+services:
+  # Stargate 认证服务
+  stargate:
+    image: soulteary/stargate:latest
+    container_name: ${STARGATE_SERVICE_NAME}
+    restart: always
+    environment:
+      # 认证服务的主机名
+      - AUTH_HOST=${AUTH_HOST}
+      # 密码配置格式: algorithm:password1|password2|password3
+      # 支持的算法: plaintext, bcrypt, md5, sha512
+      - PASSWORDS=${PASSWORDS}
+      # 可选配置
+      - LANGUAGE=${LANGUAGE}
+      - LOGIN_PAGE_TITLE=${LOGIN_PAGE_TITLE}
+      - LOGIN_PAGE_FOOTER_TEXT=${LOGIN_PAGE_FOOTER_TEXT}
+      - USER_HEADER_NAME=${USER_HEADER_NAME}
+      # Cookie 域名（用于跨域会话共享，在 .env 中配置）
+      # - COOKIE_DOMAIN=${COOKIE_DOMAIN}
+      # 调试模式（在 .env 中配置）
+      # - DEBUG=${DEBUG}
+    networks:
+      - ${TRAEFIK_NETWORK}
+    labels:
+      # 启用 Traefik 服务发现
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK}"
+
+      # HTTP 路由 - 重定向到 HTTPS
+      - "traefik.http.routers.${STARGATE_PREFIX}-http.entrypoints=http"
+      - "traefik.http.routers.${STARGATE_PREFIX}-http.middlewares=redir-https"
+      - "traefik.http.routers.${STARGATE_PREFIX}-http.rule=Host(`${STARGATE_DOMAIN}`) || PathPrefix(`/_session_exchange`)"
+      - "traefik.http.routers.${STARGATE_PREFIX}-http.service=noop@internal"
+
+      # HTTPS 路由 - Stargate 服务
+      - "traefik.http.routers.${STARGATE_PREFIX}-https.entrypoints=https"
+      - "traefik.http.routers.${STARGATE_PREFIX}-https.tls=true"
+      - "traefik.http.routers.${STARGATE_PREFIX}-https.middlewares=gzip"
+      - "traefik.http.routers.${STARGATE_PREFIX}-https.rule=Host(`${STARGATE_DOMAIN}`) || PathPrefix(`/_session_exchange`)"
+      
+      # 服务配置
+      - "traefik.http.services.${STARGATE_PREFIX}-backend.loadbalancer.server.scheme=http"
+      - "traefik.http.services.${STARGATE_PREFIX}-backend.loadbalancer.server.port=${STARGATE_PORT}"
+
+      # 定义 Forward Auth 中间件（供其他服务使用）
+      - "traefik.http.middlewares.stargate-auth.forwardauth.address=http://${STARGATE_SERVICE_NAME}/_auth"
+      - "traefik.http.middlewares.stargate-auth.forwardauth.authResponseHeaders=${USER_HEADER_NAME}"
+      - "traefik.http.middlewares.stargate-auth.forwardauth.authResponseHeadersRegex=X-Forwarded-.*"
+      - "traefik.http.middlewares.stargate-auth.forwardauth.trustForwardHeader=true"
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost/health || exit 1"]
+      interval: ${HEALTH_CHECK_INTERVAL}
+      timeout: ${HEALTH_CHECK_TIMEOUT}
+      retries: ${HEALTH_CHECK_RETRIES}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: ${LOG_MAX_SIZE}
+        max-file: ${LOG_MAX_FILE}
+
+  # 示例：受保护的服务（使用 whoami 作为演示）
+  protected-service:
+    image: traefik/whoami:latest
+    container_name: ${PROTECTED_SERVICE_NAME}
+    restart: always
+    networks:
+      - ${TRAEFIK_NETWORK}
+    labels:
+      # 启用 Traefik 服务发现
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK}"
+
+      # HTTP 路由 - 重定向到 HTTPS
+      - "traefik.http.routers.${PROTECTED_PREFIX}-http.entrypoints=http"
+      - "traefik.http.routers.${PROTECTED_PREFIX}-http.middlewares=redir-https"
+      - "traefik.http.routers.${PROTECTED_PREFIX}-http.rule=Host(`${PROTECTED_DOMAIN}`)"
+      - "traefik.http.routers.${PROTECTED_PREFIX}-http.service=noop@internal"
+
+      # HTTPS 路由 - 使用 Stargate 认证中间件
+      - "traefik.http.routers.${PROTECTED_PREFIX}-https.entrypoints=https"
+      - "traefik.http.routers.${PROTECTED_PREFIX}-https.tls=true"
+      - "traefik.http.routers.${PROTECTED_PREFIX}-https.middlewares=gzip,stargate-auth"
+      - "traefik.http.routers.${PROTECTED_PREFIX}-https.rule=Host(`${PROTECTED_DOMAIN}`)"
+
+      # 服务配置
+      - "traefik.http.services.${PROTECTED_PREFIX}-backend.loadbalancer.server.scheme=http"
+      - "traefik.http.services.${PROTECTED_PREFIX}-backend.loadbalancer.server.port=${PROTECTED_PORT}"
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: ${LOG_MAX_SIZE}
+        max-file: ${LOG_MAX_FILE}
+
+networks:
+  traefik:
+    external: true

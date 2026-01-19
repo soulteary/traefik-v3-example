@@ -1,0 +1,36 @@
+name: ${SERVICE_NAME}
+services:
+  flare:
+    image: soulteary/flare:0.5.1
+    networks:
+      - ${TRAEFIK_NETWORK}
+    labels:
+      # 用于 Traefik 服务发现
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK}"
+      # HTTP 相关
+      # 使用 HTTP 协议访问，将使用 `http`（80端口） 提供服务
+      - "traefik.http.routers.${SERVICE_PREFIX}-http.entrypoints=http"
+      # 并自动跳转至 HTTPS 协议（443端口）
+      - "traefik.http.routers.${SERVICE_PREFIX}-http.middlewares=redir-https"
+      # 服务域名
+      - "traefik.http.routers.${SERVICE_PREFIX}-http.rule=Host(`${SERVICE_DOMAIN}`)"
+      # 服务名称为 noop@internal，表示不提供任何服务 (因为自动跳转，没必要请求服务)
+      - "traefik.http.routers.${SERVICE_PREFIX}-http.service=noop@internal"
+      # HTTPS 相关
+      # 使用 HTTPS 协议访问，将使用 `https`（443端口） 提供服务
+      - "traefik.http.routers.${SERVICE_PREFIX}-https.entrypoints=https"
+      # 在这个端口上使用 TLS 协议
+      - "traefik.http.routers.${SERVICE_PREFIX}-https.tls=true"
+      # 对响应内容启用 GZIP 压缩
+      - "traefik.http.routers.${SERVICE_PREFIX}-https.middlewares=gzip"
+      # 服务域名
+      - "traefik.http.routers.${SERVICE_PREFIX}-https.rule=Host(`${SERVICE_DOMAIN}`)"
+      # 服务相关
+      # 声明服务名称，使用指定端口提供服务
+      - "traefik.http.services.${SERVICE_PREFIX}-backend.loadbalancer.server.scheme=http"
+      - "traefik.http.services.${SERVICE_PREFIX}-backend.loadbalancer.server.port=${SERVICE_PORT}"
+
+networks:
+  traefik:
+    external: true

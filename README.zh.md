@@ -29,13 +29,29 @@ traefik-v3-example/
 ├── ssl/                       # 证书存储目录
 │   ├── acme.json             # ACME 证书存储文件（ACME 模式）
 │   └── example.com.conf      # 证书生成配置文件示例
-├── docker-compose.yml         # 基础配置（需要环境变量）
-├── docker-compose.acme.yml    # ACME 自动申请证书配置
-├── docker-compose.local-certs.yml  # 使用本地证书配置
-├── docker-compose.flare.yml   # Flare 服务接入示例
-├── docker-compose.stargate.yml # Stargate Forward Auth 服务示例
-├── docker-compose.owlmail.yml  # OwlMail 邮件测试服务示例
-├── docker-compose.make-cert.yml    # 证书生成工具
+├── traefik/                   # Traefik 服务配置目录
+│   ├── base/                 # 基础配置（需要环境变量）
+│   │   ├── docker-compose.yml
+│   │   └── .env
+│   ├── acme/                 # ACME 自动申请证书配置
+│   │   ├── docker-compose.yml
+│   │   └── .env
+│   └── local-certs/          # 使用本地证书配置
+│       ├── docker-compose.yml
+│       └── .env
+├── traefik-make-local-certs/  # 证书生成工具
+│   ├── docker-compose.yml
+│   └── .env
+├── traefik-app-examples/     # 应用集成示例目录
+│   ├── flare/                # Flare 服务接入示例
+│   │   ├── docker-compose.yml
+│   │   └── .env
+│   ├── stargate/             # Stargate Forward Auth 服务示例
+│   │   ├── docker-compose.yml
+│   │   └── .env
+│   └── owlmail/              # OwlMail 邮件测试服务示例
+│       ├── docker-compose.yml
+│       └── .env
 ├── README.md                  # 本文档（英文）
 └── README.zh.md               # 本文档（中文）
 ```
@@ -50,7 +66,7 @@ traefik-v3-example/
 
 ### 环境变量配置
 
-在使用 `docker-compose.yml` 之前，需要配置以下环境变量。你可以创建 `.env` 文件或直接导出环境变量：
+在使用 docker-compose 文件之前，需要配置以下环境变量。你可以在对应的目录中创建 `.env` 文件或直接导出环境变量：
 
 ```bash
 # 服务配置
@@ -93,33 +109,33 @@ docker network create traefik
 1. 生成自签名证书：
 
 ```bash
-docker compose -f docker-compose.make-cert.yml up
-docker compose -f docker-compose.make-cert.yml down --remove-orphans
+docker compose -f traefik-make-local-certs/docker-compose.yml up
+docker compose -f traefik-make-local-certs/docker-compose.yml down --remove-orphans
 ```
 
-> 提示：如需自定义域名，可以修改 `docker-compose.make-cert.yml` 中的 `CERT_DNS` 环境变量，例如：`CERT_DNS=yourdomain.com,*.yourdomain.com`
+> 提示：如需自定义域名，可以修改 `traefik-make-local-certs/.env` 中的 `CERT_DNS` 环境变量，例如：`CERT_DNS=yourdomain.com,*.yourdomain.com`
 
 生成的证书会保存在 `ssl/` 目录下。
 
 2. 启动 Traefik：
 
 ```bash
-docker-compose -f docker-compose.local-certs.yml up -d
+docker compose -f traefik/local-certs/docker-compose.yml up -d
 ```
 
 #### 方式二：使用 ACME 自动申请证书（适合生产环境）
 
-1. 配置环境变量（特别是 `ACME_EMAIL` 和 `CF_DNS_API_TOKEN`）
+1. 在 `traefik/acme/.env` 中配置环境变量（特别是 `ACME_EMAIL` 和 `CF_DNS_API_TOKEN`）
 2. 启动 Traefik：
 
 ```bash
-docker-compose -f docker-compose.acme.yml up -d
+docker compose -f traefik/acme/docker-compose.yml up -d
 ```
 
 #### 方式三：使用基础配置（需要完整环境变量）
 
 ```bash
-docker-compose up -d
+docker compose -f traefik/base/docker-compose.yml up -d
 ```
 
 ### 步骤 3：访问 Dashboard
@@ -137,13 +153,13 @@ docker-compose up -d
 
 | 文件 | 用途 | 说明 |
 |------|------|------|
-| `docker-compose.yml` | 基础配置 | 需要完整的环境变量配置，支持 ACME 和本地证书 |
-| `docker-compose.acme.yml` | ACME 证书配置 | 使用 Let's Encrypt 自动申请证书（需要 DNS API Token） |
-| `docker-compose.local-certs.yml` | 本地证书配置 | 使用本地自签名证书，适合测试环境 |
-| `docker-compose.flare.yml` | 服务示例 | Flare 服务接入 Traefik 的完整示例 |
-| `docker-compose.stargate.yml` | Forward Auth 示例 | Stargate 认证服务集成示例，包含受保护服务演示 |
-| `docker-compose.owlmail.yml` | 邮件测试服务示例 | OwlMail 邮件测试服务集成示例，支持 SMTP 和 Web 界面 |
-| `docker-compose.make-cert.yml` | 证书生成工具 | 使用 certs-maker 容器生成自签名证书 |
+| `traefik/base/docker-compose.yml` | 基础配置 | 需要完整的环境变量配置，支持 ACME 和本地证书 |
+| `traefik/acme/docker-compose.yml` | ACME 证书配置 | 使用 Let's Encrypt 自动申请证书（需要 DNS API Token） |
+| `traefik/local-certs/docker-compose.yml` | 本地证书配置 | 使用本地自签名证书，适合测试环境 |
+| `traefik-app-examples/flare/docker-compose.yml` | 服务示例 | Flare 服务接入 Traefik 的完整示例 |
+| `traefik-app-examples/stargate/docker-compose.yml` | Forward Auth 示例 | Stargate 认证服务集成示例，包含受保护服务演示 |
+| `traefik-app-examples/owlmail/docker-compose.yml` | 邮件测试服务示例 | OwlMail 邮件测试服务集成示例，支持 SMTP 和 Web 界面 |
+| `traefik-make-local-certs/docker-compose.yml` | 证书生成工具 | 使用 certs-maker 容器生成自签名证书 |
 
 ### 配置文件说明
 
@@ -176,9 +192,9 @@ cipherSuites = [
 ]
 ```
 
-#### `docker-compose.make-cert.yml`
+#### `traefik-make-local-certs/docker-compose.yml`
 
-使用 certs-maker 容器生成自签名证书。可以通过修改 `CERT_DNS` 环境变量来自定义域名：
+使用 certs-maker 容器生成自签名证书。可以通过修改 `traefik-make-local-certs/.env` 中的 `CERT_DNS` 环境变量来自定义域名：
 
 ```yaml
 services:
@@ -187,7 +203,7 @@ services:
     environment:
       - CERT_DNS=example.com,*.example.com  # 自定义域名，支持通配符
     volumes:
-      - ./ssl:/ssl
+      - ../../ssl:/ssl
 ```
 
 生成的证书文件会保存在 `ssl/` 目录下，格式为 PEM 格式（`.pem.crt` 和 `.pem.key`）。
@@ -202,7 +218,7 @@ services:
 
 ### 示例 1：接入新服务（参考 Flare 示例）
 
-以 `docker-compose.flare.yml` 为例，展示如何将服务接入 Traefik：
+以 `traefik-app-examples/flare/docker-compose.yml` 为例，展示如何将服务接入 Traefik：
 
 ```yaml
 services:
@@ -246,17 +262,17 @@ services:
 1. 生成证书：
 
 ```bash
-docker compose -f docker-compose.make-cert.yml up
-docker compose -f docker-compose.make-cert.yml down --remove-orphans
+docker compose -f traefik-make-local-certs/docker-compose.yml up
+docker compose -f traefik-make-local-certs/docker-compose.yml down --remove-orphans
 ```
 
-> 提示：如需自定义域名，可以修改 `docker-compose.make-cert.yml` 中的 `CERT_DNS` 环境变量。
+> 提示：如需自定义域名，可以修改 `traefik-make-local-certs/.env` 中的 `CERT_DNS` 环境变量。
 
 2. 确保 `config/certs.toml` 中的证书路径正确
 3. 启动服务：
 
 ```bash
-docker-compose -f docker-compose.local-certs.yml up -d
+docker compose -f traefik/local-certs/docker-compose.yml up -d
 ```
 
 ### 示例 3：使用 ACME 自动申请证书
@@ -273,7 +289,7 @@ export CF_DNS_API_TOKEN=your-token
 3. 启动服务：
 
 ```bash
-docker-compose -f docker-compose.acme.yml up -d
+docker compose -f traefik/acme/docker-compose.yml up -d
 ```
 
 Traefik 会自动通过 DNS Challenge 申请证书。
@@ -282,12 +298,11 @@ Traefik 会自动通过 DNS Challenge 申请证书。
 
 Stargate 是一个轻量级的 Forward Auth 服务，可以作为统一的认证入口保护多个后端服务。
 
-1. 修改 `docker-compose.stargate.yml` 中的配置：
+1. 修改 `traefik-app-examples/stargate/.env` 中的配置：
 
-```yaml
-environment:
-  - AUTH_HOST=auth.example.com
-  - PASSWORDS=plaintext:test123|admin456
+```bash
+AUTH_HOST=auth.example.com
+PASSWORDS=plaintext:test123|admin456
 ```
 
 2. 确保域名 DNS 解析正确（`auth.example.com` 和 `protected.example.com`）
@@ -295,7 +310,7 @@ environment:
 3. 启动服务：
 
 ```bash
-docker-compose -f docker-compose.stargate.yml up -d
+docker compose -f traefik-app-examples/stargate/docker-compose.yml up -d
 ```
 
 4. 访问受保护的服务：
@@ -327,11 +342,10 @@ labels:
 
 OwlMail 是一个用于开发和测试环境的 SMTP 服务器和 Web 界面，可以捕获和显示所有发送的邮件。它完全兼容 MailDev API，提供更好的性能和更丰富的功能。
 
-1. 修改 `docker-compose.owlmail.yml` 中的域名配置：
+1. 修改 `traefik-app-examples/owlmail/.env` 中的域名配置：
 
-```yaml
-labels:
-  - "traefik.http.routers.owlmail-https.rule=Host(`mail.example.com`)"
+```bash
+SERVICE_DOMAIN=mail.example.com
 ```
 
 2. 确保域名 DNS 解析正确（`mail.example.com`）
@@ -339,7 +353,7 @@ labels:
 3. 启动服务：
 
 ```bash
-docker-compose -f docker-compose.owlmail.yml up -d
+docker compose -f traefik-app-examples/owlmail/docker-compose.yml up -d
 ```
 
 4. 访问和使用：
@@ -394,7 +408,11 @@ docker logs -f traefik
 修改配置文件后，Traefik 会自动重新加载（已启用 `watch` 模式）。如果修改了 Docker Compose 配置，需要重启服务：
 
 ```bash
-docker-compose restart traefik
+docker compose -f traefik/base/docker-compose.yml restart traefik
+# 或
+docker compose -f traefik/acme/docker-compose.yml restart traefik
+# 或
+docker compose -f traefik/local-certs/docker-compose.yml restart traefik
 ```
 
 ### Q: 如何添加多个域名？

@@ -1,4 +1,4 @@
 logs/
 .DS_Store
 ssl
-docker-compose.yml
+./docker-compose.yml

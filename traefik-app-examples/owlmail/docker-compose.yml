@@ -1,0 +1,82 @@
+# OwlMail 邮件测试服务示例配置
+# https://github.com/soulteary/owlmail
+#
+# 使用说明：
+# 1. 修改环境变量中的域名配置（OWLMAIL_DOMAIN）
+# 2. 确保域名 DNS 解析正确
+# 3. 启动服务：docker-compose -f docker-compose.owlmail.yml up -d
+#
+# 访问示例：
+# - OwlMail Web 界面: https://mail.example.com
+# - SMTP 服务器: localhost:1025 (用于应用程序发送测试邮件)
+#
+# 配置说明：
+# - Web 界面通过 Traefik 暴露，支持 HTTPS
+# - SMTP 端口 1025 直接暴露，供应用程序连接
+# - 邮件数据持久化存储在 ./owlmail-data 目录
+
+name: ${SERVICE_NAME}
+
+services:
+  # OwlMail 邮件测试服务
+  owlmail:
+    image: ghcr.io/soulteary/owlmail:latest
+    container_name: ${SERVICE_NAME}
+    restart: always
+    ports:
+      # 暴露 SMTP 端口，供应用程序连接发送测试邮件
+      - "${SMTP_PORT}:${SMTP_PORT}"
+    environment:
+      # SMTP 服务器配置
+      - MAILDEV_SMTP_PORT=${SMTP_PORT}
+      - MAILDEV_SMTP_HOST=${SMTP_HOST}
+      # Web 界面配置（容器内部端口，通过 Traefik 暴露）
+      - MAILDEV_WEB_PORT=${SERVICE_PORT}
+      - MAILDEV_WEB_IP=0.0.0.0
+      # 邮件存储目录（可选，持久化邮件数据，在 .env 中配置）
+      # - MAILDEV_MAIL_DIRECTORY=/data/mails
+      # HTTP Basic Auth（可选，保护 Web 界面，在 .env 中配置）
+      # - MAILDEV_WEB_USER=admin
+      # - MAILDEV_WEB_PASS=password123
+      # 日志级别（可选：normal, verbose, silent，在 .env 中配置）
+      # - MAILDEV_VERBOSE=false
+    volumes:
+      # 邮件数据持久化（可选）
+      - ${DATA_DIR}:/data/mails
+    networks:
+      - ${TRAEFIK_NETWORK}
+    labels:
+      # 启用 Traefik 服务发现
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK}"
+
+      # HTTP 路由 - 重定向到 HTTPS
+      - "traefik.http.routers.${SERVICE_PREFIX}-http.entrypoints=http"
+      - "traefik.http.routers.${SERVICE_PREFIX}-http.middlewares=redir-https"
+      - "traefik.http.routers.${SERVICE_PREFIX}-http.rule=Host(`${SERVICE_DOMAIN}`)"
+      - "traefik.http.routers.${SERVICE_PREFIX}-http.service=noop@internal"
+
+      # HTTPS 路由 - OwlMail Web 界面
+      - "traefik.http.routers.${SERVICE_PREFIX}-https.entrypoints=https"
+      - "traefik.http.routers.${SERVICE_PREFIX}-https.tls=true"
+      - "traefik.http.routers.${SERVICE_PREFIX}-https.middlewares=gzip"
+      - "traefik.http.routers.${SERVICE_PREFIX}-https.rule=Host(`${SERVICE_DOMAIN}`)"
+      
+      # 服务配置
+      - "traefik.http.services.${SERVICE_PREFIX}-backend.loadbalancer.server.scheme=http"
+      - "traefik.http.services.${SERVICE_PREFIX}-backend.loadbalancer.server.port=${SERVICE_PORT}"
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:${SERVICE_PORT}/healthz || exit 1"]
+      interval: ${HEALTH_CHECK_INTERVAL}
+      timeout: ${HEALTH_CHECK_TIMEOUT}
+      retries: ${HEALTH_CHECK_RETRIES}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: ${LOG_MAX_SIZE}
+        max-file: ${LOG_MAX_FILE}
+
+networks:
+  traefik:
+    external: true

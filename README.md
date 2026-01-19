@@ -29,13 +29,29 @@ traefik-v3-example/
 ├── ssl/                       # Certificate storage directory
 │   ├── acme.json             # ACME certificate storage file (ACME mode)
 │   └── example.com.conf      # Certificate generation configuration example
-├── docker-compose.yml         # Base configuration (requires environment variables)
-├── docker-compose.acme.yml    # ACME automatic certificate configuration
-├── docker-compose.local-certs.yml  # Local certificate configuration
-├── docker-compose.flare.yml   # Flare service integration example
-├── docker-compose.stargate.yml # Stargate Forward Auth service example
-├── docker-compose.owlmail.yml  # OwlMail email testing service example
-├── docker-compose.make-cert.yml    # Certificate generation tool
+├── traefik/                   # Traefik service configurations
+│   ├── base/                 # Base configuration (requires environment variables)
+│   │   ├── docker-compose.yml
+│   │   └── .env
+│   ├── acme/                 # ACME automatic certificate configuration
+│   │   ├── docker-compose.yml
+│   │   └── .env
+│   └── local-certs/          # Local certificate configuration
+│       ├── docker-compose.yml
+│       └── .env
+├── traefik-make-local-certs/  # Certificate generation tool
+│   ├── docker-compose.yml
+│   └── .env
+├── traefik-app-examples/     # Application integration examples
+│   ├── flare/                # Flare service integration example
+│   │   ├── docker-compose.yml
+│   │   └── .env
+│   ├── stargate/             # Stargate Forward Auth service example
+│   │   ├── docker-compose.yml
+│   │   └── .env
+│   └── owlmail/              # OwlMail email testing service example
+│       ├── docker-compose.yml
+│       └── .env
 ├── README.md                  # This document (English)
 └── README.zh.md               # This document (Chinese)
 ```
@@ -50,7 +66,7 @@ traefik-v3-example/
 
 ### Environment Variables Configuration
 
-Before using `docker-compose.yml`, you need to configure the following environment variables. You can create a `.env` file or export environment variables directly:
+Before using the docker-compose files, you need to configure the following environment variables. You can create a `.env` file in the corresponding directory or export environment variables directly:
 
 ```bash
 # Service configuration
@@ -93,33 +109,33 @@ Choose different configuration methods based on your needs:
 1. Generate self-signed certificates:
 
 ```bash
-docker compose -f docker-compose.make-cert.yml up
-docker compose -f docker-compose.make-cert.yml down --remove-orphans
+docker compose -f traefik-make-local-certs/docker-compose.yml up
+docker compose -f traefik-make-local-certs/docker-compose.yml down --remove-orphans
 ```
 
-> Tip: To customize the domain name, you can modify the `CERT_DNS` environment variable in `docker-compose.make-cert.yml`, for example: `CERT_DNS=yourdomain.com,*.yourdomain.com`
+> Tip: To customize the domain name, you can modify the `CERT_DNS` environment variable in `traefik-make-local-certs/.env`, for example: `CERT_DNS=yourdomain.com,*.yourdomain.com`
 
 The generated certificates will be saved in the `ssl/` directory.
 
 2. Start Traefik:
 
 ```bash
-docker-compose -f docker-compose.local-certs.yml up -d
+docker compose -f traefik/local-certs/docker-compose.yml up -d
 ```
 
 #### Method 2: Use ACME Automatic Certificate (Suitable for Production)
 
-1. Configure environment variables (especially `ACME_EMAIL` and `CF_DNS_API_TOKEN`)
+1. Configure environment variables (especially `ACME_EMAIL` and `CF_DNS_API_TOKEN`) in `traefik/acme/.env`
 2. Start Traefik:
 
 ```bash
-docker-compose -f docker-compose.acme.yml up -d
+docker compose -f traefik/acme/docker-compose.yml up -d
 ```
 
 #### Method 3: Use Base Configuration (Requires Complete Environment Variables)
 
 ```bash
-docker-compose up -d
+docker compose -f traefik/base/docker-compose.yml up -d
 ```
 
 ### Step 3: Access Dashboard
@@ -137,13 +153,13 @@ After successful startup, access the Traefik Dashboard:
 
 | File | Purpose | Description |
 |------|---------|-------------|
-| `docker-compose.yml` | Base configuration | Requires complete environment variable configuration, supports both ACME and local certificates |
-| `docker-compose.acme.yml` | ACME certificate configuration | Uses Let's Encrypt automatic certificate issuance (requires DNS API Token) |
-| `docker-compose.local-certs.yml` | Local certificate configuration | Uses local self-signed certificates, suitable for testing environments |
-| `docker-compose.flare.yml` | Service example | Complete example of Flare service integration with Traefik |
-| `docker-compose.stargate.yml` | Forward Auth example | Stargate authentication service integration example, includes protected service demonstration |
-| `docker-compose.owlmail.yml` | Email testing service example | OwlMail email testing service integration example, supports SMTP and Web interface |
-| `docker-compose.make-cert.yml` | Certificate generation tool | Uses certs-maker container to generate self-signed certificates |
+| `traefik/base/docker-compose.yml` | Base configuration | Requires complete environment variable configuration, supports both ACME and local certificates |
+| `traefik/acme/docker-compose.yml` | ACME certificate configuration | Uses Let's Encrypt automatic certificate issuance (requires DNS API Token) |
+| `traefik/local-certs/docker-compose.yml` | Local certificate configuration | Uses local self-signed certificates, suitable for testing environments |
+| `traefik-app-examples/flare/docker-compose.yml` | Service example | Complete example of Flare service integration with Traefik |
+| `traefik-app-examples/stargate/docker-compose.yml` | Forward Auth example | Stargate authentication service integration example, includes protected service demonstration |
+| `traefik-app-examples/owlmail/docker-compose.yml` | Email testing service example | OwlMail email testing service integration example, supports SMTP and Web interface |
+| `traefik-make-local-certs/docker-compose.yml` | Certificate generation tool | Uses certs-maker container to generate self-signed certificates |
 
 ### Configuration Files Description
 
@@ -176,9 +192,9 @@ cipherSuites = [
 ]
 ```
 
-#### `docker-compose.make-cert.yml`
+#### `traefik-make-local-certs/docker-compose.yml`
 
-Uses certs-maker container to generate self-signed certificates. You can customize the domain name by modifying the `CERT_DNS` environment variable:
+Uses certs-maker container to generate self-signed certificates. You can customize the domain name by modifying the `CERT_DNS` environment variable in `traefik-make-local-certs/.env`:
 
 ```yaml
 services:
@@ -187,7 +203,7 @@ services:
     environment:
       - CERT_DNS=example.com,*.example.com  # Custom domain name, supports wildcards
     volumes:
-      - ./ssl:/ssl
+      - ../../ssl:/ssl
 ```
 
 The generated certificate files will be saved in the `ssl/` directory in PEM format (`.pem.crt` and `.pem.key`).
@@ -202,7 +218,7 @@ Creates a dedicated Docker network for Traefik. If the network already exists, t
 
 ### Example 1: Integrate New Service (Reference Flare Example)
 
-Using `docker-compose.flare.yml` as an example, demonstrating how to integrate a service with Traefik:
+Using `traefik-app-examples/flare/docker-compose.yml` as an example, demonstrating how to integrate a service with Traefik:
 
 ```yaml
 services:
@@ -246,17 +262,17 @@ Key label descriptions:
 1. Generate certificates:
 
 ```bash
-docker compose -f docker-compose.make-cert.yml up
-docker compose -f docker-compose.make-cert.yml down --remove-orphans
+docker compose -f traefik-make-local-certs/docker-compose.yml up
+docker compose -f traefik-make-local-certs/docker-compose.yml down --remove-orphans
 ```
 
-> Tip: To customize the domain name, you can modify the `CERT_DNS` environment variable in `docker-compose.make-cert.yml`.
+> Tip: To customize the domain name, you can modify the `CERT_DNS` environment variable in `traefik-make-local-certs/.env`.
 
 2. Ensure the certificate paths in `config/certs.toml` are correct
 3. Start the service:
 
 ```bash
-docker-compose -f docker-compose.local-certs.yml up -d
+docker compose -f traefik/local-certs/docker-compose.yml up -d
 ```
 
 ### Example 3: Use ACME Automatic Certificate
@@ -273,7 +289,7 @@ export CF_DNS_API_TOKEN=your-token
 3. Start the service:
 
 ```bash
-docker-compose -f docker-compose.acme.yml up -d
+docker compose -f traefik/acme/docker-compose.yml up -d
 ```
 
 Traefik will automatically request certificates through DNS Challenge.
@@ -282,12 +298,11 @@ Traefik will automatically request certificates through DNS Challenge.
 
 Stargate is a lightweight Forward Auth service that can serve as a unified authentication entry point to protect multiple backend services.
 
-1. Modify the configuration in `docker-compose.stargate.yml`:
+1. Modify the configuration in `traefik-app-examples/stargate/.env`:
 
-```yaml
-environment:
-  - AUTH_HOST=auth.example.com
-  - PASSWORDS=plaintext:test123|admin456
+```bash
+AUTH_HOST=auth.example.com
+PASSWORDS=plaintext:test123|admin456
 ```
 
 2. Ensure DNS resolution is correct (`auth.example.com` and `protected.example.com`)
@@ -295,7 +310,7 @@ environment:
 3. Start the service:
 
 ```bash
-docker-compose -f docker-compose.stargate.yml up -d
+docker compose -f traefik-app-examples/stargate/docker-compose.yml up -d
 ```
 
 4. Access protected services:
@@ -327,11 +342,10 @@ For more information, see: [Stargate Project](https://github.com/soulteary/starg
 
 OwlMail is an SMTP server and Web interface for development and testing environments that can capture and display all sent emails. It is fully compatible with MailDev API, providing better performance and richer features.
 
-1. Modify the domain configuration in `docker-compose.owlmail.yml`:
+1. Modify the domain configuration in `traefik-app-examples/owlmail/.env`:
 
-```yaml
-labels:
-  - "traefik.http.routers.owlmail-https.rule=Host(`mail.example.com`)"
+```bash
+SERVICE_DOMAIN=mail.example.com
 ```
 
 2. Ensure DNS resolution is correct (`mail.example.com`)
@@ -339,7 +353,7 @@ labels:
 3. Start the service:
 
 ```bash
-docker-compose -f docker-compose.owlmail.yml up -d
+docker compose -f traefik-app-examples/owlmail/docker-compose.yml up -d
 ```
 
 4. Access and use:
@@ -394,7 +408,11 @@ docker logs -f traefik
 After modifying configuration files, Traefik will automatically reload (watch mode is enabled). If you modified Docker Compose configuration, you need to restart the service:
 
 ```bash
-docker-compose restart traefik
+docker compose -f traefik/base/docker-compose.yml restart traefik
+# or
+docker compose -f traefik/acme/docker-compose.yml restart traefik
+# or
+docker compose -f traefik/local-certs/docker-compose.yml restart traefik
 ```
 
 ### Q: How to add multiple domains?
