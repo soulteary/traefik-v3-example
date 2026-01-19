@@ -32,6 +32,7 @@ traefik-v3-example/
 ├── docker-compose.local-certs.yml  # 使用本地证书配置
 ├── docker-compose.flare.yml   # Flare 服务接入示例
 ├── docker-compose.stargate.yml # Stargate Forward Auth 服务示例
+├── docker-compose.owlmail.yml  # OwlMail 邮件测试服务示例
 ├── docker-compose.make-cert.yml    # 证书生成工具
 └── README.md                  # 本文档
 ```
@@ -138,6 +139,7 @@ docker-compose up -d
 | `docker-compose.local-certs.yml` | 本地证书配置 | 使用本地自签名证书，适合测试环境 |
 | `docker-compose.flare.yml` | 服务示例 | Flare 服务接入 Traefik 的完整示例 |
 | `docker-compose.stargate.yml` | Forward Auth 示例 | Stargate 认证服务集成示例，包含受保护服务演示 |
+| `docker-compose.owlmail.yml` | 邮件测试服务示例 | OwlMail 邮件测试服务集成示例，支持 SMTP 和 Web 界面 |
 | `docker-compose.make-cert.yml` | 证书生成工具 | 使用 certs-maker 容器生成自签名证书 |
 
 ### 配置文件说明
@@ -318,6 +320,57 @@ labels:
 
 更多信息请参考：[Stargate 项目](https://github.com/soulteary/stargate)
 
+### 示例 5：使用 OwlMail 邮件测试服务
+
+OwlMail 是一个用于开发和测试环境的 SMTP 服务器和 Web 界面，可以捕获和显示所有发送的邮件。它完全兼容 MailDev API，提供更好的性能和更丰富的功能。
+
+1. 修改 `docker-compose.owlmail.yml` 中的域名配置：
+
+```yaml
+labels:
+  - "traefik.http.routers.owlmail-https.rule=Host(`mail.example.com`)"
+```
+
+2. 确保域名 DNS 解析正确（`mail.example.com`）
+
+3. 启动服务：
+
+```bash
+docker-compose -f docker-compose.owlmail.yml up -d
+```
+
+4. 访问和使用：
+
+- **Web 界面**：`https://mail.example.com` - 查看所有捕获的邮件
+- **SMTP 服务器**：`localhost:1025` - 供应用程序连接发送测试邮件
+
+**配置应用程序使用 OwlMail SMTP：**
+
+```bash
+# 环境变量示例
+SMTP_HOST=localhost
+SMTP_PORT=1025
+SMTP_USER=  # 可选，如果启用了 SMTP 认证
+SMTP_PASS=  # 可选，如果启用了 SMTP 认证
+```
+
+**可选配置：**
+
+- **邮件持久化**：邮件数据会保存在 `./owlmail-data` 目录
+- **HTTP Basic Auth**：取消注释环境变量中的 `MAILDEV_WEB_USER` 和 `MAILDEV_WEB_PASS` 来保护 Web 界面
+- **邮件转发**：可以配置 `MAILDEV_OUTGOING_*` 环境变量来转发邮件到真实的 SMTP 服务器
+
+**关键特性：**
+
+- ✅ 100% 兼容 MailDev API
+- ✅ 支持邮件持久化存储
+- ✅ 支持邮件转发和自动转发
+- ✅ 支持 SMTP 认证和 TLS
+- ✅ 提供 RESTful API 和 WebSocket 支持
+- ✅ 支持批量操作和邮件导出
+
+更多信息请参考：[OwlMail 项目](https://github.com/soulteary/owlmail)
+
 ## 常见问题
 
 ### Q: 如何查看 Traefik 日志？
@@ -384,6 +437,7 @@ DNS_LIST=*.example.com,*.test.com,example.com
 - [certs-maker](https://github.com/soulteary/certs-maker) - 证书生成工具
 - [docker-flare](https://github.com/soulteary/docker-flare) - Flare 服务 Docker 镜像
 - [Stargate](https://github.com/soulteary/stargate) - 轻量级 Forward Auth 认证服务
+- [OwlMail](https://github.com/soulteary/owlmail) - 邮件开发和测试工具，兼容 MailDev
 
 ### 官方文档
 
