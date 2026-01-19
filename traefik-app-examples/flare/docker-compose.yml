@@ -1,13 +1,13 @@
 name: ${SERVICE_NAME}
 services:
   flare:
-    image: soulteary/flare:0.5.1
+    image: ${DOCKER_IMAGE}
     networks:
-      - ${TRAEFIK_NETWORK}
+      - traefik
     labels:
       # 用于 Traefik 服务发现
       - "traefik.enable=true"
-      - "traefik.docker.network=${TRAEFIK_NETWORK}"
+      - "traefik.docker.network=traefik"
       # HTTP 相关
       # 使用 HTTP 协议访问，将使用 `http`（80端口） 提供服务
       - "traefik.http.routers.${SERVICE_PREFIX}-http.entrypoints=http"

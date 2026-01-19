@@ -4,7 +4,7 @@
 # 使用说明：
 # 1. 修改环境变量中的 AUTH_HOST 和 PASSWORDS
 # 2. 确保域名 DNS 解析正确
-# 3. 启动服务：docker-compose -f docker-compose.stargate.yml up -d
+# 3. 启动服务：docker compose -f traefik-app-examples/stargate/docker-compose.yml up -d
 #
 # 访问示例：
 # - Stargate 登录页面: https://auth.example.com/_login?callback=https://protected.example.com
@@ -15,7 +15,7 @@ name: ${STARGATE_SERVICE_NAME}
 services:
   # Stargate 认证服务
   stargate:
-    image: soulteary/stargate:latest
+    image: ${STARGATE_DOCKER_IMAGE}
     container_name: ${STARGATE_SERVICE_NAME}
     restart: always
     environment:
@@ -34,11 +34,11 @@ services:
       # 调试模式（在 .env 中配置）
       # - DEBUG=${DEBUG}
     networks:
-      - ${TRAEFIK_NETWORK}
+      - traefik
     labels:
       # 启用 Traefik 服务发现
       - "traefik.enable=true"
-      - "traefik.docker.network=${TRAEFIK_NETWORK}"
+      - "traefik.docker.network=traefik"
 
       # HTTP 路由 - 重定向到 HTTPS
       - "traefik.http.routers.${STARGATE_PREFIX}-http.entrypoints=http"
@@ -75,15 +75,15 @@ services:
 
   # 示例：受保护的服务（使用 whoami 作为演示）
   protected-service:
-    image: traefik/whoami:latest
+    image: ${PROTECTED_DOCKER_IMAGE}
     container_name: ${PROTECTED_SERVICE_NAME}
     restart: always
     networks:
-      - ${TRAEFIK_NETWORK}
+      - traefik
     labels:
       # 启用 Traefik 服务发现
       - "traefik.enable=true"
-      - "traefik.docker.network=${TRAEFIK_NETWORK}"
+      - "traefik.docker.network=traefik"
 
       # HTTP 路由 - 重定向到 HTTPS
       - "traefik.http.routers.${PROTECTED_PREFIX}-http.entrypoints=http"

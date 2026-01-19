@@ -99,7 +99,7 @@ services:
       # 用于 Traefik 服务发现
       - /var/run/docker.sock:/var/run/docker.sock:ro
       # 用户配置文件，主要用于 TLS 动态配置
-      - ../../config/:/etc/traefik/config/:ro
+      - ./config/:/etc/traefik/config/:ro
       - ../../ssl/:/data/ssl/
     extra_hosts:
       # https://github.com/traefik/traefik/blob/master/pkg/version/version.go#L67

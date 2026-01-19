@@ -4,7 +4,7 @@
 # 使用说明：
 # 1. 修改环境变量中的域名配置（OWLMAIL_DOMAIN）
 # 2. 确保域名 DNS 解析正确
-# 3. 启动服务：docker-compose -f docker-compose.owlmail.yml up -d
+# 3. 启动服务：docker compose -f traefik-app-examples/owlmail/docker-compose.yml up -d
 #
 # 访问示例：
 # - OwlMail Web 界面: https://mail.example.com
@@ -20,7 +20,7 @@ name: ${SERVICE_NAME}
 services:
   # OwlMail 邮件测试服务
   owlmail:
-    image: ghcr.io/soulteary/owlmail:latest
+    image: ${DOCKER_IMAGE}
     container_name: ${SERVICE_NAME}
     restart: always
     ports:
@@ -44,11 +44,11 @@ services:
       # 邮件数据持久化（可选）
       - ${DATA_DIR}:/data/mails
     networks:
-      - ${TRAEFIK_NETWORK}
+      - traefik
     labels:
       # 启用 Traefik 服务发现
       - "traefik.enable=true"
-      - "traefik.docker.network=${TRAEFIK_NETWORK}"
+      - "traefik.docker.network=traefik"
 
       # HTTP 路由 - 重定向到 HTTPS
       - "traefik.http.routers.${SERVICE_PREFIX}-http.entrypoints=http"
