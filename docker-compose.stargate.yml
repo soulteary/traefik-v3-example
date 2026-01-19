@@ -1,0 +1,113 @@
+# Stargate Forward Auth Service 示例配置
+# https://github.com/soulteary/stargate
+#
+# 使用说明：
+# 1. 修改环境变量中的 AUTH_HOST 和 PASSWORDS
+# 2. 确保域名 DNS 解析正确
+# 3. 启动服务：docker-compose -f docker-compose.stargate.yml up -d
+#
+# 访问示例：
+# - Stargate 登录页面: https://auth.example.com/_login?callback=https://protected.example.com
+# - 受保护的服务: https://protected.example.com (需要先登录)
+
+name: stargate
+
+services:
+  # Stargate 认证服务
+  stargate:
+    image: soulteary/stargate:latest
+    container_name: stargate
+    restart: always
+    environment:
+      # 认证服务的主机名
+      - AUTH_HOST=auth.example.com
+      # 密码配置格式: algorithm:password1|password2|password3
+      # 支持的算法: plaintext, bcrypt, md5, sha512
+      # 示例: plaintext:test123|admin456
+      - PASSWORDS=plaintext:test123|admin456
+      # 可选配置
+      - LANGUAGE=zh
+      - LOGIN_PAGE_TITLE=Stargate - 登录
+      - LOGIN_PAGE_FOOTER_TEXT=Copyright © 2026 - Stargate
+      - USER_HEADER_NAME=X-Forwarded-User
+      # Cookie 域名（用于跨域会话共享，例如: .example.com）
+      # - COOKIE_DOMAIN=.example.com
+      # 调试模式
+      # - DEBUG=false
+    networks:
+      - traefik
+    labels:
+      # 启用 Traefik 服务发现
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+
+      # HTTP 路由 - 重定向到 HTTPS
+      - "traefik.http.routers.stargate-http.entrypoints=http"
+      - "traefik.http.routers.stargate-http.middlewares=redir-https"
+      - "traefik.http.routers.stargate-http.rule=Host(`auth.example.com`) || PathPrefix(`/_session_exchange`)"
+      - "traefik.http.routers.stargate-http.service=noop@internal"
+
+      # HTTPS 路由 - Stargate 服务
+      - "traefik.http.routers.stargate-https.entrypoints=https"
+      - "traefik.http.routers.stargate-https.tls=true"
+      - "traefik.http.routers.stargate-https.middlewares=gzip"
+      - "traefik.http.routers.stargate-https.rule=Host(`auth.example.com`) || PathPrefix(`/_session_exchange`)"
+      
+      # 服务配置
+      - "traefik.http.services.stargate-backend.loadbalancer.server.scheme=http"
+      - "traefik.http.services.stargate-backend.loadbalancer.server.port=80"
+
+      # 定义 Forward Auth 中间件（供其他服务使用）
+      - "traefik.http.middlewares.stargate-auth.forwardauth.address=http://stargate/_auth"
+      - "traefik.http.middlewares.stargate-auth.forwardauth.authResponseHeaders=X-Forwarded-User"
+      - "traefik.http.middlewares.stargate-auth.forwardauth.authResponseHeadersRegex=X-Forwarded-.*"
+      - "traefik.http.middlewares.stargate-auth.forwardauth.trustForwardHeader=true"
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # 示例：受保护的服务（使用 whoami 作为演示）
+  protected-service:
+    image: traefik/whoami:latest
+    container_name: protected-service
+    restart: always
+    networks:
+      - traefik
+    labels:
+      # 启用 Traefik 服务发现
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+
+      # HTTP 路由 - 重定向到 HTTPS
+      - "traefik.http.routers.protected-http.entrypoints=http"
+      - "traefik.http.routers.protected-http.middlewares=redir-https"
+      - "traefik.http.routers.protected-http.rule=Host(`protected.example.com`)"
+      - "traefik.http.routers.protected-http.service=noop@internal"
+
+      # HTTPS 路由 - 使用 Stargate 认证中间件
+      - "traefik.http.routers.protected-https.entrypoints=https"
+      - "traefik.http.routers.protected-https.tls=true"
+      - "traefik.http.routers.protected-https.middlewares=gzip,stargate-auth"
+      - "traefik.http.routers.protected-https.rule=Host(`protected.example.com`)"
+
+      # 服务配置
+      - "traefik.http.services.protected-backend.loadbalancer.server.scheme=http"
+      - "traefik.http.services.protected-backend.loadbalancer.server.port=80"
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  traefik:
+    external: true

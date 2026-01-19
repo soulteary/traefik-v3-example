@@ -31,6 +31,7 @@ traefik-v3-example/
 ├── docker-compose.acme.yml    # ACME 自动申请证书配置
 ├── docker-compose.local-certs.yml  # 使用本地证书配置
 ├── docker-compose.flare.yml   # Flare 服务接入示例
+├── docker-compose.stargate.yml # Stargate Forward Auth 服务示例
 ├── docker-compose.make-cert.yml    # 证书生成工具
 └── README.md                  # 本文档
 ```
@@ -136,6 +137,7 @@ docker-compose up -d
 | `docker-compose.acme.yml` | ACME 证书配置 | 使用 Let's Encrypt 自动申请证书（需要 DNS API Token） |
 | `docker-compose.local-certs.yml` | 本地证书配置 | 使用本地自签名证书，适合测试环境 |
 | `docker-compose.flare.yml` | 服务示例 | Flare 服务接入 Traefik 的完整示例 |
+| `docker-compose.stargate.yml` | Forward Auth 示例 | Stargate 认证服务集成示例，包含受保护服务演示 |
 | `docker-compose.make-cert.yml` | 证书生成工具 | 使用 certs-maker 容器生成自签名证书 |
 
 ### 配置文件说明
@@ -271,6 +273,51 @@ docker-compose -f docker-compose.acme.yml up -d
 
 Traefik 会自动通过 DNS Challenge 申请证书。
 
+### 示例 4：使用 Stargate Forward Auth 保护服务
+
+Stargate 是一个轻量级的 Forward Auth 服务，可以作为统一的认证入口保护多个后端服务。
+
+1. 修改 `docker-compose.stargate.yml` 中的配置：
+
+```yaml
+environment:
+  - AUTH_HOST=auth.example.com
+  - PASSWORDS=plaintext:test123|admin456
+```
+
+2. 确保域名 DNS 解析正确（`auth.example.com` 和 `protected.example.com`）
+
+3. 启动服务：
+
+```bash
+docker-compose -f docker-compose.stargate.yml up -d
+```
+
+4. 访问受保护的服务：
+
+- 首次访问 `https://protected.example.com` 会被重定向到登录页面
+- 登录页面：`https://auth.example.com/_login?callback=https://protected.example.com`
+- 输入配置的密码（例如：`test123` 或 `admin456`）完成登录
+- 登录成功后会自动跳转回受保护的服务
+
+**关键配置说明：**
+
+- Stargate 服务配置了 Forward Auth 中间件，供其他服务使用
+- 受保护的服务通过 `stargate-auth` 中间件启用认证
+- 支持跨域会话共享（通过 `COOKIE_DOMAIN` 配置）
+- 支持多种密码加密算法（plaintext、bcrypt、md5、sha512）
+
+**为其他服务启用 Stargate 认证：**
+
+在服务的 Traefik 标签中添加 `stargate-auth` 中间件：
+
+```yaml
+labels:
+  - "traefik.http.routers.your-service.middlewares=gzip,stargate-auth"
+```
+
+更多信息请参考：[Stargate 项目](https://github.com/soulteary/stargate)
+
 ## 常见问题
 
 ### Q: 如何查看 Traefik 日志？
@@ -336,6 +383,7 @@ DNS_LIST=*.example.com,*.test.com,example.com
 - [Traefik](https://github.com/traefik/traefik) - 云原生反向代理和负载均衡器
 - [certs-maker](https://github.com/soulteary/certs-maker) - 证书生成工具
 - [docker-flare](https://github.com/soulteary/docker-flare) - Flare 服务 Docker 镜像
+- [Stargate](https://github.com/soulteary/stargate) - 轻量级 Forward Auth 认证服务
 
 ### 官方文档
 
