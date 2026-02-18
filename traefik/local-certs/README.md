@@ -19,7 +19,7 @@ Before using this configuration, you need to configure the following environment
 ```bash
 # Service configuration
 SERVICE_NAME=traefik
-DOCKER_IMAGE=ghcr.io/traefik/traefik:v3.6.7
+DOCKER_IMAGE=ghcr.io/traefik/traefik:v3.6.8
 SERVICE_HTTP_PORT=80
 SERVICE_HTTPS_PORT=443
 SERVICE_DOMAIN=traefik.example.com
