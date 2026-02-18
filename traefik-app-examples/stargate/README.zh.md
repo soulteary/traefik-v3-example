@@ -104,7 +104,7 @@ Stargate 服务配置了 Forward Auth 中间件，供其他服务使用：
 # 注意：实际配置中使用 ${STARGATE_SERVICE_NAME} 变量（默认值为 stargate）
 - "traefik.http.middlewares.stargate-auth.forwardauth.address=http://${STARGATE_SERVICE_NAME}/_auth"
 - "traefik.http.middlewares.stargate-auth.forwardauth.authResponseHeaders=X-User"
-- "traefik.http.middlewares.stargate-auth.forwardauth.authResponseHeadersRegex=X-Forwarded-.*"
+- "traefik.http.middlewares.stargate-auth.forwardauth.authResponseHeadersRegex=^(X-Forwarded-.*|X-Auth-.*)$"
 - "traefik.http.middlewares.stargate-auth.forwardauth.trustForwardHeader=true"
 ```
 

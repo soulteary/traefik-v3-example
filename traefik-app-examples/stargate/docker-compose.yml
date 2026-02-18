@@ -59,11 +59,11 @@ services:
       # 定义 Forward Auth 中间件（供其他服务使用）
       - "traefik.http.middlewares.stargate-auth.forwardauth.address=http://${STARGATE_SERVICE_NAME}/_auth"
       - "traefik.http.middlewares.stargate-auth.forwardauth.authResponseHeaders=${USER_HEADER_NAME}"
-      - "traefik.http.middlewares.stargate-auth.forwardauth.authResponseHeadersRegex=X-Forwarded-.*"
+      - "traefik.http.middlewares.stargate-auth.forwardauth.authResponseHeadersRegex=^(X-Forwarded-.*|X-Auth-.*)$"
       - "traefik.http.middlewares.stargate-auth.forwardauth.trustForwardHeader=true"
 
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost/health || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost/health >/dev/null || exit 1"]
       interval: ${HEALTH_CHECK_INTERVAL}
       timeout: ${HEALTH_CHECK_TIMEOUT}
       retries: ${HEALTH_CHECK_RETRIES}

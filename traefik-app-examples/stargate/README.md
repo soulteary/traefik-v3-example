@@ -104,7 +104,7 @@ Stargate service is configured with Forward Auth middleware for use by other ser
 # Note: The actual configuration uses ${STARGATE_SERVICE_NAME} variable (default value is stargate)
 - "traefik.http.middlewares.stargate-auth.forwardauth.address=http://${STARGATE_SERVICE_NAME}/_auth"
 - "traefik.http.middlewares.stargate-auth.forwardauth.authResponseHeaders=X-User"
-- "traefik.http.middlewares.stargate-auth.forwardauth.authResponseHeadersRegex=X-Forwarded-.*"
+- "traefik.http.middlewares.stargate-auth.forwardauth.authResponseHeadersRegex=^(X-Forwarded-.*|X-Auth-.*)$"
 - "traefik.http.middlewares.stargate-auth.forwardauth.trustForwardHeader=true"
 ```
 
