@@ -72,11 +72,15 @@ services:
       # 通用 HTTPS 重定向中间件
       - "traefik.http.middlewares.redir-https.redirectscheme.scheme=https"
       - "traefik.http.middlewares.redir-https.redirectscheme.permanent=false"
+      # 通用 Forwarded Headers 中间件，确保后端识别 HTTPS + 代理
+      - "traefik.http.middlewares.x-forwarded-proto.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.middlewares.x-forwarded-proto.headers.customrequestheaders.X-Forwarded-Ssl=on"
+      - "traefik.http.middlewares.x-forwarded-proto.headers.customrequestheaders.X-Forwarded-Port=${SERVICE_HTTPS_PORT}"
 
       # 仅在 HTTPS 端口开放服务
       - "traefik.http.routers.traefik-dashboard-secure.tls=true"
       - "traefik.http.routers.traefik-dashboard-secure.entrypoints=https"
-      - "traefik.http.routers.traefik-dashboard-secure.middlewares=gzip"
+      - "traefik.http.routers.traefik-dashboard-secure.middlewares=gzip,x-forwarded-proto"
       - "traefik.http.routers.traefik-dashboard-secure.rule=Host(`${SERVICE_DOMAIN}`)"
       - "traefik.http.routers.traefik-dashboard-secure.service=dashboard@internal"
 
