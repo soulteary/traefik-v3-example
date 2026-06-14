@@ -156,7 +156,7 @@ Default generated certificates are valid for 365 days. If you need to customize 
 ### Q: Can generated certificates be used in production?
 
 **Not recommended**. Self-signed certificates are not trusted by browsers and are only suitable for testing and development environments. Production environments should use:
-- Free certificate services like Let's Encrypt (refer to `../../traefik/acme/`)
+- Free certificate services like Let's Encrypt (refer to `../../traefik/acme-aliyun/` or `../../traefik/acme-cloudflare/`)
 - Commercial certificates
 - Certificates issued by enterprise internal CA
 

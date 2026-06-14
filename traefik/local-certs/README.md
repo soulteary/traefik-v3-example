@@ -171,7 +171,7 @@ keyFile = "/data/ssl/test.com.pem.key"
 
 ### Q: How to switch to ACME mode?
 
-If you need to switch to ACME automatic certificate issuance, please use `../../traefik/acme/` configuration.
+If you need to switch to ACME automatic certificate issuance, please use `../../traefik/acme-aliyun/` (Alibaba Cloud DNS) or `../../traefik/acme-cloudflare/` (Cloudflare DNS) configuration.
 
 ## Related Resources
 

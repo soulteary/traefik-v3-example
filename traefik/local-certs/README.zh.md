@@ -171,7 +171,7 @@ keyFile = "/data/ssl/test.com.pem.key"
 
 ### Q: 如何切换到 ACME 模式？
 
-如果需要切换到 ACME 自动申请证书，请使用 `../../traefik/acme/` 配置。
+如果需要切换到 ACME 自动申请证书，请使用 `../../traefik/acme-aliyun/`（阿里云 DNS）或 `../../traefik/acme-cloudflare/`（Cloudflare DNS）配置。
 
 ## 相关资源
 

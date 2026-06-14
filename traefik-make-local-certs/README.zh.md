@@ -156,7 +156,7 @@ docker compose -f traefik-make-local-certs/docker-compose.yml down --remove-orph
 ### Q: 生成的证书可以在生产环境使用吗？
 
 **不建议**。自签名证书不受浏览器信任，仅适用于测试和开发环境。生产环境应使用：
-- Let's Encrypt 等免费证书服务（参考 `../../traefik/acme/`）
+- Let's Encrypt 等免费证书服务（参考 `../../traefik/acme-aliyun/` 或 `../../traefik/acme-cloudflare/`）
 - 商业证书
 - 企业内网 CA 签发的证书
 
