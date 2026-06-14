@@ -5,6 +5,8 @@ services:
     container_name: ${SERVICE_NAME}
     image: ${DOCKER_IMAGE}
     restart: always
+    env_file:
+      - .env
     ports:
       - target: ${SERVICE_HTTP_PORT}
         published: ${SERVICE_HTTP_PORT}
@@ -58,15 +60,12 @@ services:
       - "--providers.file.watch=true"
       - "--providers.file.directory=/etc/traefik/config"
       - "--providers.file.debugloggeneratedtemplate=true"
-      # 自动申请证书
-      - "--certificatesresolvers.le.acme.email=${ACME_EMAIL}"
-      - "--certificatesresolvers.le.acme.storage=/data/ssl/acme.json"
-      - "--certificatesresolvers.le.acme.dnsChallenge.resolvers=1.1.1.1:53,8.8.8.8:53"
-      - "--certificatesresolvers.le.acme.dnsChallenge.provider=${ACME_PROVIDER}"
-      - "--certificatesresolvers.le.acme.dnsChallenge.propagation.delayBeforeChecks=30"
-    environment:
-      - TZ=Asia/Shanghai
-      - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
+      # 自动申请证书（Cloudflare DNS Challenge）
+      - "--certificatesresolvers.cloudflare.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.cloudflare.acme.storage=/data/ssl/acme.json"
+      - "--certificatesresolvers.cloudflare.acme.dnsChallenge.resolvers=1.1.1.1:53,8.8.8.8:53"
+      - "--certificatesresolvers.cloudflare.acme.dnsChallenge.provider=${ACME_PROVIDER}"
+      - "--certificatesresolvers.cloudflare.acme.dnsChallenge.propagation.delayBeforeChecks=30"
     networks:
       - traefik
     labels:
@@ -84,7 +83,7 @@ services:
       - "traefik.http.middlewares.x-forwarded-proto.headers.customrequestheaders.X-Forwarded-Ssl=on"
       - "traefik.http.middlewares.x-forwarded-proto.headers.customrequestheaders.X-Forwarded-Port=${SERVICE_HTTPS_PORT}"
       # 自动注册证书
-      - "traefik.http.routers.traefik-dashboard-secure.tls.certresolver=le"
+      - "traefik.http.routers.traefik-dashboard-secure.tls.certresolver=cloudflare"
       - "traefik.http.routers.traefik-dashboard-secure.tls.domains[0].main=${DNS_MAIN}"
       - "traefik.http.routers.traefik-dashboard-secure.tls.domains[0].sans=${DNS_LIST}"
 
@@ -131,6 +130,8 @@ services:
       driver: "json-file"
       options:
         max-size: "1m"
+    security_opt:
+      - no-new-privileges:true
 
 networks:
   traefik:
