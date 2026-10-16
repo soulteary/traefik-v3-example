@@ -88,7 +88,7 @@ docker network create traefik
 ```bash
 # 服务配置
 SERVICE_NAME=traefik
-DOCKER_IMAGE=ghcr.io/traefik/traefik:v3.7.14
+DOCKER_IMAGE=traefik:v3.7.15
 SERVICE_HTTP_PORT=80
 SERVICE_HTTPS_PORT=443
 SERVICE_DOMAIN=traefik.example.com
