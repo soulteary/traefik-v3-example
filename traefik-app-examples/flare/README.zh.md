@@ -4,6 +4,12 @@
 
 这是一个完整的 Flare 服务接入 Traefik 的示例，展示了如何通过 Docker 标签将服务接入 Traefik 反向代理。
 
+## 升级与持久化状态
+
+本示例固定 Flare 0.6.13，完整挂载 `/app`，包含隐藏安全状态和书签备份。从 0.5.1 升级前停止实例、备份完整数据与外部配置，先阅读[安全迁移](https://github.com/soulteary/docker-flare/blob/main/docs/upgrade-0.6.8.md)和[当前升级/回退指南](https://github.com/soulteary/docker-flare/blob/main/docs/upgrade-0.6.13.md)。旧部署未挂载数据时，替换容器前先复制既有 `/app`；新增空目录不会恢复旧容器可写层的数据。
+
+新实例默认公开且免登录，可访问的人能够浏览和编辑。敏感部署先配置[登录/私有示例](https://github.com/soulteary/docker-flare/tree/main/example)；已有私有部署保留原访问参数和凭据，不要用公开默认配置覆盖。本 HTTPS 示例配置外部 origin 与 Secure Cookie。更新后验证匿名访问边界、登录、编辑与重建状态；回退恢复旧镜像及对应完整备份。
+
 ## 功能特性
 
 - ✅ **自动服务发现**：通过 Docker 标签自动发现和配置服务
@@ -22,7 +28,8 @@ SERVICE_NAME=flare
 SERVICE_PREFIX=flare
 SERVICE_DOMAIN=flare.example.com
 SERVICE_PORT=5005
-DOCKER_IMAGE=soulteary/flare:0.5.1
+DOCKER_IMAGE=soulteary/flare:0.6.13
+DATA_DIR=./flare-data
 ```
 
 ## 快速开始
@@ -37,7 +44,7 @@ DOCKER_IMAGE=soulteary/flare:0.5.1
 ### 启动服务
 
 ```bash
-docker compose -f traefik-app-examples/flare/docker-compose.yml up -d
+docker compose --env-file traefik-app-examples/flare/.env -f traefik-app-examples/flare/docker-compose.yml up -d
 ```
 
 ### 访问服务

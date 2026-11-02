@@ -4,6 +4,12 @@
 
 This is a complete example of integrating Flare service with Traefik, demonstrating how to integrate services with Traefik reverse proxy through Docker labels.
 
+## Upgrade and persistent state
+
+This example pins Flare 0.6.13 and persists the complete `/app`, including hidden security state and bookmark backups. Stop and back up the old data/configuration before upgrading from 0.5.1. Read the [security migration](https://github.com/soulteary/docker-flare/blob/main/docs/upgrade-0.6.8.md) and [current upgrade/rollback guide](https://github.com/soulteary/docker-flare/blob/main/docs/upgrade-0.6.13.md). An old deployment without a data mount must copy its existing `/app` out before replacing the container; a new empty bind does not recover container-layer data.
+
+The default new Flare instance is public and login-disabled; people with access can browse and edit. Configure the [login/private profile](https://github.com/soulteary/docker-flare/tree/main/example) before exposing sensitive data. Preserve existing private access flags and credential sources; do not replace private configuration with public defaults. This HTTPS profile sets the external origin and secure cookies. Verify anonymous access boundaries, login, editing and a container recreation; rollback restores the old image and matching complete backup.
+
 ## Features
 
 - ✅ **Automatic Service Discovery**: Automatic service discovery and configuration through Docker labels
@@ -22,7 +28,8 @@ SERVICE_NAME=flare
 SERVICE_PREFIX=flare
 SERVICE_DOMAIN=flare.example.com
 SERVICE_PORT=5005
-DOCKER_IMAGE=soulteary/flare:0.5.1
+DOCKER_IMAGE=soulteary/flare:0.6.13
+DATA_DIR=./flare-data
 ```
 
 ## Quick Start
@@ -37,7 +44,7 @@ DOCKER_IMAGE=soulteary/flare:0.5.1
 ### Start Service
 
 ```bash
-docker compose -f traefik-app-examples/flare/docker-compose.yml up -d
+docker compose --env-file traefik-app-examples/flare/.env -f traefik-app-examples/flare/docker-compose.yml up -d
 ```
 
 ### Access Service
