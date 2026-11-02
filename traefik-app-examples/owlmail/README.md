@@ -19,7 +19,14 @@ SMTP_HOST=0.0.0.0
 DATA_DIR=./owlmail-data
 ```
 
-Create the external `traefik` network and start the chosen Traefik configuration first. Then run from this checkout:
+For the default new bind directory, prepare ownership before the first run (the released image uses UID/GID 1000; adjust the path if DATA_DIR changes):
+
+```sh
+mkdir -p traefik-app-examples/owlmail/owlmail-data
+sudo chown 1000:1000 traefik-app-examples/owlmail/owlmail-data
+```
+
+Back up existing data before changing ownership and ensure existing files remain accessible to that UID. Create the external `traefik` network and start the chosen Traefik configuration first. Then run from this checkout:
 
 ```sh
 docker compose --env-file traefik-app-examples/owlmail/.env -f traefik-app-examples/owlmail/docker-compose.yml up -d

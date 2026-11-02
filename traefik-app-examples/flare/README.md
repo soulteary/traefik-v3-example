@@ -44,7 +44,7 @@ DATA_DIR=./flare-data
 ### Start Service
 
 ```bash
-docker compose -f traefik-app-examples/flare/docker-compose.yml up -d
+docker compose --env-file traefik-app-examples/flare/.env -f traefik-app-examples/flare/docker-compose.yml up -d
 ```
 
 ### Access Service

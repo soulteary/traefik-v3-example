@@ -19,7 +19,14 @@ SMTP_HOST=0.0.0.0
 DATA_DIR=./owlmail-data
 ```
 
-先创建外部 `traefik` 网络、启动选定的 Traefik 配置，再从仓库根执行：
+默认新目录先准备权限（正式镜像使用 UID/GID 1000；DATA_DIR 改变时同步改路径）：
+
+```sh
+mkdir -p traefik-app-examples/owlmail/owlmail-data
+sudo chown 1000:1000 traefik-app-examples/owlmail/owlmail-data
+```
+
+已有数据先备份再调整权限，确保既有文件也能被该 UID 访问。先创建外部 `traefik` 网络、启动选定的 Traefik 配置，再从仓库根执行：
 
 ```sh
 docker compose --env-file traefik-app-examples/owlmail/.env -f traefik-app-examples/owlmail/docker-compose.yml up -d
