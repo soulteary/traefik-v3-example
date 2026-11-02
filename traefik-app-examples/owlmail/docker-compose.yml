@@ -33,6 +33,7 @@ services:
       # Web 界面配置（容器内部端口，通过 Traefik 暴露）
       - OWLMAIL_WEB_PORT=${SERVICE_PORT}
       - OWLMAIL_WEB_HOST=0.0.0.0
+      - OWLMAIL_WEB_EXTERNAL_URL=https://${SERVICE_DOMAIN}
       # 邮件存储目录（可选，持久化邮件数据，在 .env 中配置）
       - OWLMAIL_MAIL_DIR=/app/mail
       # HTTP Basic Auth（可选，保护 Web 界面，在 .env 中配置）

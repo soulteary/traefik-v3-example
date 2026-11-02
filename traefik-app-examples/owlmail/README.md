@@ -31,7 +31,7 @@ Visit `https://mail.example.com`; send SMTP to the configured host port. SMTP is
 
 The complete `${DATA_DIR}` is mounted at `/app/mail`, the image's actual mail directory; the healthcheck uses `owlmail healthcheck` and the same startup environment. Retain readable/writable ownership for the image's owlmail user. Compose `.env` is interpolation input, not automatic container environment: optional Web Basic Auth, allowed browser origins or outgoing SMTP fields must also be explicitly forwarded under the service's `environment`. Use the [configuration reference](https://github.com/soulteary/owlmail/blob/v0.13.0/docs/en/Configuration-Reference.md), without using `*` to suppress origin checks.
 
-When external HTTPS/browser origins differ from the backend origin, explicitly configure `OWLMAIL_WEB_EXTERNAL_URL=https://mail.example.com` and narrowly scoped allowed origins where needed. Native `/api/v1/emails` can verify capture; SMTP-only mode, read-only MCP and optional MailDev facade retain their documented configuration boundaries.
+When external HTTPS/browser origins differ from the backend origin, the profile sets `OWLMAIL_WEB_EXTERNAL_URL=https://mail.example.com`; adjust it to the chosen domain and narrowly scoped allowed origins where needed. Native `/api/v1/emails` can verify capture; SMTP-only mode, read-only MCP and optional MailDev facade retain their documented configuration boundaries.
 
 ## Upgrade from 0.3.0 and rollback
 

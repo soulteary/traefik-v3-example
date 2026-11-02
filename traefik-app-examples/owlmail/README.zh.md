@@ -31,7 +31,7 @@ docker compose --env-file traefik-app-examples/owlmail/.env -f traefik-app-examp
 
 `${DATA_DIR}` 完整挂载到镜像实际使用的 `/app/mail`；健康检查使用 `owlmail healthcheck` 读取同一启动环境。目录须允许镜像 owlmail 用户读写。Compose `.env` 只用于插值，不会自动传入容器；启用 Web Basic Auth、浏览器来源或出站 SMTP 选项时须显式写入服务的 `environment`，详见[配置参考](https://github.com/soulteary/owlmail/blob/v0.13.0/docs/zh-CN/Configuration-Reference.md)，不要用 `*` 取消来源检查。
 
-外部 HTTPS 与后端 origin 不同时，显式设置 `OWLMAIL_WEB_EXTERNAL_URL=https://mail.example.com`，按需添加最小允许来源。原生 `/api/v1/emails` 可检查捕获；SMTP-only、只读 MCP 与可选 MailDev facade 保留各自配置边界。
+外部 HTTPS 与后端 origin 不同时，本示例设置 `OWLMAIL_WEB_EXTERNAL_URL=https://mail.example.com`，更换域名时同步调整，按需添加最小允许来源。原生 `/api/v1/emails` 可检查捕获；SMTP-only、只读 MCP 与可选 MailDev facade 保留各自配置边界。
 
 ## 从 0.3.0 升级与回退
 
