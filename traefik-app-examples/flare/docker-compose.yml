@@ -2,6 +2,11 @@ name: ${SERVICE_NAME}
 services:
   flare:
     image: ${DOCKER_IMAGE}
+    environment:
+      FLARE_EXTERNAL_URL: "https://${SERVICE_DOMAIN}"
+      FLARE_COOKIE_SECURE: "true"
+    volumes:
+      - ${DATA_DIR}:/app
     networks:
       - traefik
     labels:
