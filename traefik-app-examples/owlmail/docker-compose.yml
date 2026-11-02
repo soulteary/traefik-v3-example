@@ -68,7 +68,7 @@ services:
       - "traefik.http.services.${SERVICE_PREFIX}-backend.loadbalancer.server.port=${SERVICE_PORT}"
 
     healthcheck:
-      test: ["CMD", "owlmail", "healthcheck"]
+      test: ["CMD", "/app/owlmail", "healthcheck", "--container"]
       interval: ${HEALTH_CHECK_INTERVAL}
       timeout: ${HEALTH_CHECK_TIMEOUT}
       retries: ${HEALTH_CHECK_RETRIES}
