@@ -88,7 +88,7 @@ Configure the following variables in `.env`:
 ```bash
 # Service configuration
 SERVICE_NAME=traefik
-DOCKER_IMAGE=traefik:v3.7.15
+DOCKER_IMAGE=traefik:v3.8.0
 SERVICE_HTTP_PORT=80
 SERVICE_HTTPS_PORT=443
 SERVICE_DOMAIN=traefik.example.com

@@ -28,7 +28,7 @@ SERVICE_NAME=flare
 SERVICE_PREFIX=flare
 SERVICE_DOMAIN=flare.example.com
 SERVICE_PORT=5005
-DOCKER_IMAGE=soulteary/flare:0.6.13
+DOCKER_IMAGE=soulteary/flare:0.6.15
 DATA_DIR=./flare-data
 ```
 

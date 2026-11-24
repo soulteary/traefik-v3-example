@@ -9,7 +9,7 @@
 - ✅ **统一认证入口**：为多个后端服务提供统一的认证入口
 - ✅ **Forward Auth 中间件**：通过 Traefik Forward Auth 中间件保护服务
 - ✅ **跨域会话共享**：支持跨域会话共享（通过 Cookie 域名配置）
-- ✅ **多种密码加密**：支持 plaintext、bcrypt、md5、sha512 等加密算法
+- ✅ **多种密码加密**：开发环境支持 plaintext，生产环境使用 bcrypt
 - ✅ **受保护服务示例**：包含完整的受保护服务演示
 
 ## 环境变量配置
@@ -22,18 +22,21 @@ STARGATE_SERVICE_NAME=stargate
 STARGATE_PREFIX=stargate
 STARGATE_DOMAIN=auth.example.com
 STARGATE_PORT=8080
-STARGATE_DOCKER_IMAGE=ghcr.io/soulteary/stargate:v0.2.0
+STARGATE_DOCKER_IMAGE=ghcr.io/soulteary/stargate:1.8.0
 
 # 受保护服务配置
 PROTECTED_SERVICE_NAME=protected-service
 PROTECTED_PREFIX=protected
 PROTECTED_DOMAIN=protected.example.com
 PROTECTED_PORT=80
-PROTECTED_DOCKER_IMAGE=ghcr.io/traefik/whoami:v1.11
+PROTECTED_DOCKER_IMAGE=ghcr.io/traefik/whoami:v1.12.0
 
 # 认证配置
 AUTH_HOST=auth.example.com
 PASSWORDS=plaintext:test123|admin456
+SESSION_EXCHANGE_SECRET=
+TRUSTED_PROXIES=
+CALLBACK_ALLOWED_HOSTS=protected.example.com
 
 # 可选配置
 LANGUAGE=zh
@@ -67,6 +70,12 @@ LOG_MAX_FILE=3
 1. **认证服务域名**：`AUTH_HOST` 和 `STARGATE_DOMAIN`
 2. **受保护服务域名**：`PROTECTED_DOMAIN`
 3. **密码配置**：`PASSWORDS`（格式：`算法:密码1|密码2|密码3`）
+
+4. **会话交换密钥**：运行 `openssl rand -hex 32` 生成新值，填写到 `SESSION_EXCHANGE_SECRET`。
+5. **可信代理网段**：运行 `docker network inspect traefik --format '{{range .IPAM.Config}}{{println .Subnet}}{{end}}'`，将实际代理网段填写到 `TRUSTED_PROXIES`。
+6. **允许回调的主机**：让 `CALLBACK_ALLOWED_HOSTS` 与 `PROTECTED_DOMAIN` 保持一致。
+
+本示例中的 Stargate 1.8.0 监听 8080 端口。可信代理配置用于读取 HTTPS 转发信息，并在登录后返回受保护服务；Compose 会在启动前检查两个必填值。健康检查使用镜像自带的 `wget` 请求 `/healthz`。
 
 ### 步骤 2：确保 DNS 解析正确
 
@@ -102,7 +111,7 @@ Stargate 服务配置了 Forward Auth 中间件，供其他服务使用：
 ```yaml
 # 定义 Forward Auth 中间件（供其他服务使用）
 # 注意：实际配置中使用 ${STARGATE_SERVICE_NAME} 变量（默认值为 stargate）
-- "traefik.http.middlewares.stargate-auth.forwardauth.address=http://${STARGATE_SERVICE_NAME}/_auth"
+- "traefik.http.middlewares.stargate-auth.forwardauth.address=http://${STARGATE_SERVICE_NAME}:${STARGATE_PORT}/_auth"
 - "traefik.http.middlewares.stargate-auth.forwardauth.authResponseHeaders=X-User"
 - "traefik.http.middlewares.stargate-auth.forwardauth.authResponseHeadersRegex=^(X-Forwarded-.*|X-Auth-.*)$"
 - "traefik.http.middlewares.stargate-auth.forwardauth.trustForwardHeader=true"
@@ -119,20 +128,15 @@ Stargate 服务配置了 Forward Auth 中间件，供其他服务使用：
 
 ### 密码配置格式
 
-支持多种密码加密算法：
+Stargate 1.8.0 接受 `plaintext` 和 `bcrypt`。升级前请替换旧的 MD5/SHA512 配置。在 `.env` 中用单引号包裹 bcrypt 值，避免 Compose 展开其中的 `$`：
 
 ```bash
 # 明文密码（测试环境）
 PASSWORDS=plaintext:test123|admin456
 
 # Bcrypt 加密（生产环境推荐）
-PASSWORDS=bcrypt:$2a$10$...
+PASSWORDS='bcrypt:$2a$10$...'
 
-# MD5 加密
-PASSWORDS=md5:5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8
-
-# SHA512 加密
-PASSWORDS=sha512:ee26b0dd4af7e749aa1a8ee3c10ae9923f618980772e473f8819a5d4940e0db27ac185f8a0e1d5f84f88bc887fd67b143732c304cc5fa9ad8e6f57f50028a8
 ```
 
 ### 跨域会话共享
@@ -229,8 +233,6 @@ htpasswd -nbBC 10 "" yourpassword | cut -d: -f2
 Stargate 支持以下加密算法：
 - `plaintext`：明文（仅测试环境）
 - `bcrypt`：Bcrypt 加密（推荐生产环境）
-- `md5`：MD5 哈希
-- `sha512`：SHA512 哈希
 
 ## 相关资源
 

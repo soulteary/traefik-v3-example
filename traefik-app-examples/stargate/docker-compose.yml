@@ -2,7 +2,7 @@
 # https://github.com/soulteary/stargate
 #
 # 使用说明：
-# 1. 修改环境变量中的 AUTH_HOST 和 PASSWORDS
+# 1. 修改 AUTH_HOST、PASSWORDS、SESSION_EXCHANGE_SECRET 和 TRUSTED_PROXIES
 # 2. 确保域名 DNS 解析正确
 # 3. 启动服务：docker compose -f traefik-app-examples/stargate/docker-compose.yml up -d
 #
@@ -22,8 +22,12 @@ services:
       # 认证服务的主机名
       - AUTH_HOST=${AUTH_HOST}
       # 密码配置格式: algorithm:password1|password2|password3
-      # 支持的算法: plaintext, bcrypt, md5, sha512
+      # 支持的算法: plaintext, bcrypt
       - PASSWORDS=${PASSWORDS}
+      - PORT=${STARGATE_PORT}
+      - SESSION_EXCHANGE_SECRET=${SESSION_EXCHANGE_SECRET:?Set SESSION_EXCHANGE_SECRET in .env}
+      - TRUSTED_PROXIES=${TRUSTED_PROXIES:?Set TRUSTED_PROXIES to the Traefik network subnet}
+      - CALLBACK_ALLOWED_HOSTS=${CALLBACK_ALLOWED_HOSTS}
       # 可选配置
       - LANGUAGE=${LANGUAGE}
       - LOGIN_PAGE_TITLE=${LOGIN_PAGE_TITLE}
@@ -43,27 +47,27 @@ services:
       # HTTP 路由 - 重定向到 HTTPS
       - "traefik.http.routers.${STARGATE_PREFIX}-http.entrypoints=http"
       - "traefik.http.routers.${STARGATE_PREFIX}-http.middlewares=redir-https"
-      - "traefik.http.routers.${STARGATE_PREFIX}-http.rule=Host(`${STARGATE_DOMAIN}`) || PathPrefix(`/_session_exchange`)"
+      - "traefik.http.routers.${STARGATE_PREFIX}-http.rule=Host(`${STARGATE_DOMAIN}`) || Path(`/_session_exchange`)"
       - "traefik.http.routers.${STARGATE_PREFIX}-http.service=noop@internal"
 
       # HTTPS 路由 - Stargate 服务
       - "traefik.http.routers.${STARGATE_PREFIX}-https.entrypoints=https"
       - "traefik.http.routers.${STARGATE_PREFIX}-https.tls=true"
       - "traefik.http.routers.${STARGATE_PREFIX}-https.middlewares=gzip"
-      - "traefik.http.routers.${STARGATE_PREFIX}-https.rule=Host(`${STARGATE_DOMAIN}`) || PathPrefix(`/_session_exchange`)"
+      - "traefik.http.routers.${STARGATE_PREFIX}-https.rule=Host(`${STARGATE_DOMAIN}`) || Path(`/_session_exchange`)"
       
       # 服务配置
       - "traefik.http.services.${STARGATE_PREFIX}-backend.loadbalancer.server.scheme=http"
       - "traefik.http.services.${STARGATE_PREFIX}-backend.loadbalancer.server.port=${STARGATE_PORT}"
 
       # 定义 Forward Auth 中间件（供其他服务使用）
-      - "traefik.http.middlewares.stargate-auth.forwardauth.address=http://${STARGATE_SERVICE_NAME}/_auth"
+      - "traefik.http.middlewares.stargate-auth.forwardauth.address=http://${STARGATE_SERVICE_NAME}:${STARGATE_PORT}/_auth"
       - "traefik.http.middlewares.stargate-auth.forwardauth.authResponseHeaders=${USER_HEADER_NAME}"
       - "traefik.http.middlewares.stargate-auth.forwardauth.authResponseHeadersRegex=^(X-Forwarded-.*|X-Auth-.*)$"
       - "traefik.http.middlewares.stargate-auth.forwardauth.trustForwardHeader=true"
 
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost/health >/dev/null || exit 1"]
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:${STARGATE_PORT}/healthz"]
       interval: ${HEALTH_CHECK_INTERVAL}
       timeout: ${HEALTH_CHECK_TIMEOUT}
       retries: ${HEALTH_CHECK_RETRIES}
