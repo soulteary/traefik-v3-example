@@ -71,7 +71,7 @@ This tool uses `soulteary/certs-maker` container to generate certificates:
 ```yaml
 services:
   certs-maker:
-    image: soulteary/certs-maker:v3.8.0
+    image: soulteary/certs-maker:v3.8.2
     environment:
       - CERT_DNS=${CERT_DNS}
     volumes:

@@ -9,7 +9,7 @@ This is a complete example of using Stargate Forward Auth service to protect bac
 - ✅ **Unified Authentication Entry**: Provides unified authentication entry for multiple backend services
 - ✅ **Forward Auth Middleware**: Protect services through Traefik Forward Auth middleware
 - ✅ **Cross-Domain Session Sharing**: Supports cross-domain session sharing (via Cookie domain configuration)
-- ✅ **Multiple Password Encryption**: Supports plaintext, bcrypt, md5, sha512 and other encryption algorithms
+- ✅ **Multiple Password Encryption**: Supports plaintext for development and bcrypt for production
 - ✅ **Protected Service Example**: Includes complete protected service demonstration
 
 ## Environment Variables Configuration
@@ -22,18 +22,21 @@ STARGATE_SERVICE_NAME=stargate
 STARGATE_PREFIX=stargate
 STARGATE_DOMAIN=auth.example.com
 STARGATE_PORT=8080
-STARGATE_DOCKER_IMAGE=ghcr.io/soulteary/stargate:v0.2.0
+STARGATE_DOCKER_IMAGE=ghcr.io/soulteary/stargate:1.8.0
 
 # Protected service configuration
 PROTECTED_SERVICE_NAME=protected-service
 PROTECTED_PREFIX=protected
 PROTECTED_DOMAIN=protected.example.com
 PROTECTED_PORT=80
-PROTECTED_DOCKER_IMAGE=ghcr.io/traefik/whoami:v1.11
+PROTECTED_DOCKER_IMAGE=ghcr.io/traefik/whoami:v1.12.0
 
 # Authentication configuration
 AUTH_HOST=auth.example.com
 PASSWORDS=plaintext:test123|admin456
+SESSION_EXCHANGE_SECRET=
+TRUSTED_PROXIES=
+CALLBACK_ALLOWED_HOSTS=protected.example.com
 
 # Optional configuration
 LANGUAGE=zh
@@ -67,6 +70,12 @@ Configure in `stargate/.env`:
 1. **Authentication Service Domain**: `AUTH_HOST` and `STARGATE_DOMAIN`
 2. **Protected Service Domain**: `PROTECTED_DOMAIN`
 3. **Password Configuration**: `PASSWORDS` (format: `algorithm:password1|password2|password3`)
+
+4. **Session exchange secret**: Generate a fresh value with `openssl rand -hex 32` and save it as `SESSION_EXCHANGE_SECRET`.
+5. **Trusted proxy network**: Run `docker network inspect traefik --format '{{range .IPAM.Config}}{{println .Subnet}}{{end}}'` and set `TRUSTED_PROXIES` to the actual proxy subnet.
+6. **Allowed callback hosts**: Keep `CALLBACK_ALLOWED_HOSTS` aligned with `PROTECTED_DOMAIN`.
+
+Stargate 1.8.0 listens on port 8080 in this example. It needs trusted proxy configuration to accept forwarded HTTPS metadata and return users to the application after login. Compose checks the two required values before starting. The container health check uses its bundled `wget` against `/healthz`.
 
 ### Step 2: Ensure DNS Resolution is Correct
 
@@ -102,7 +111,7 @@ Stargate service is configured with Forward Auth middleware for use by other ser
 ```yaml
 # Define Forward Auth middleware (for use by other services)
 # Note: The actual configuration uses ${STARGATE_SERVICE_NAME} variable (default value is stargate)
-- "traefik.http.middlewares.stargate-auth.forwardauth.address=http://${STARGATE_SERVICE_NAME}/_auth"
+- "traefik.http.middlewares.stargate-auth.forwardauth.address=http://${STARGATE_SERVICE_NAME}:${STARGATE_PORT}/_auth"
 - "traefik.http.middlewares.stargate-auth.forwardauth.authResponseHeaders=X-User"
 - "traefik.http.middlewares.stargate-auth.forwardauth.authResponseHeadersRegex=^(X-Forwarded-.*|X-Auth-.*)$"
 - "traefik.http.middlewares.stargate-auth.forwardauth.trustForwardHeader=true"
@@ -119,20 +128,15 @@ Protected services enable authentication through `stargate-auth` middleware:
 
 ### Password Configuration Format
 
-Supports multiple password encryption algorithms:
+Stargate 1.8.0 accepts `plaintext` and `bcrypt`. Replace older MD5/SHA512 configurations before upgrading. Single-quote bcrypt values in `.env` so Compose preserves their dollar signs:
 
 ```bash
 # Plaintext password (testing environment)
 PASSWORDS=plaintext:test123|admin456
 
 # Bcrypt encryption (recommended for production)
-PASSWORDS=bcrypt:$2a$10$...
+PASSWORDS='bcrypt:$2a$10$...'
 
-# MD5 encryption
-PASSWORDS=md5:5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8
-
-# SHA512 encryption
-PASSWORDS=sha512:ee26b0dd4af7e749aa1a8ee3c10ae9923f618980772e473f8819a5d4940e0db27ac185f8a0e1d5f84f88bc887fd67b143732c304cc5fa9ad8e6f57f50028a8
 ```
 
 ### Cross-Domain Session Sharing
@@ -229,8 +233,6 @@ Remove `stargate-auth` middleware:
 Stargate supports the following encryption algorithms:
 - `plaintext`: Plaintext (testing environment only)
 - `bcrypt`: Bcrypt encryption (recommended for production)
-- `md5`: MD5 hash
-- `sha512`: SHA512 hash
 
 ## Related Resources
 
